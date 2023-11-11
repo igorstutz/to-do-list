@@ -10,7 +10,7 @@ export function Header() {
   return (
     <div className="w-full flex items-center justify-center h-16 bg-white drop-shadow mb-4">
       <header className="flex w-full max-w-7xl items-center justify-between px-4 mx-auto">
-         <Link to="/login">
+         <Link to="/">
             <img
               src={logoImg} 
               alt="Logo do site" 
@@ -18,7 +18,7 @@ export function Header() {
          </Link>
 
          {!loadingAuth && signed && (
-          <Link to="/login">
+          <Link to="/">
             <div className="border-2 rounded-full p-1 border-gray-900 flex justify-center">
               <FiLogIn size={24} color="#000"/>
             </div>

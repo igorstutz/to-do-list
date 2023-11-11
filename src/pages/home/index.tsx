@@ -1,127 +1,100 @@
-// src/pages/home/index.tsx
-import { useState, useEffect, useContext } from 'react';
-import { useForm } from 'react-hook-form';
-import { Container } from "../../components/container";
-import toast from 'react-hot-toast';
-import { AuthContext } from '../../contexts/AuthContext';
-import { addTask, updateTask, deleteTask, loadUserTasks } from '../../services/taskService';
+import React, { useState } from 'react';
+import { Container } from '../../components/container';
 
 interface Task {
-  id: string;
+  id: number;
   title: string;
 }
 
-interface FormInputs {
-  taskTitle: string;
-}
-
-export default function Home() {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormInputs>();
+const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const { user } = useContext(AuthContext);
+  const [newTask, setNewTask] = useState<string>("");
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState<string>("");
 
-  useEffect(() => {
-    if (user) {
-      const unsubscribe = loadUserTasks(user.uid, setTasks);
-      return () => unsubscribe && unsubscribe();
-    } else {
-      setTasks([]);
-    }
-  }, [user]);
-
-  const onSubmit = async (data: FormInputs) => {
-    if (data.taskTitle.trim() && user) {
-      try {
-        await addTask(data.taskTitle, user.uid);
-        toast.success('Tarefa adicionada com sucesso!');
-        reset();
-      } catch (error) {
-        toast.error('Erro ao adicionar a tarefa');
-      }
+  const addTask = (): void => {
+    if (newTask) {
+      setTasks([...tasks, { id: Date.now(), title: newTask }]);
+      setNewTask("");
     }
   };
 
-  const onEditSubmit = async (data: FormInputs) => {
-    if (data.taskTitle.trim() && user && editingTaskId) {
-      try {
-        await updateTask(editingTaskId, data.taskTitle);
-        setEditingTaskId(null);
-        reset();
-        toast.success('Tarefa atualizada com sucesso!');
-      } catch (error) {
-        toast.error('Erro ao atualizar tarefa.');
-      }
-    }
-  };
-
-  const startEditing = (task: Task) => {
+  const startEditing = (task: Task): void => {
     setEditingTaskId(task.id);
-    setValue('taskTitle', task.title);
+    setEditingTaskTitle(task.title);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (user) {
-      try {
-        await deleteTask(taskId);
-        setTasks(currentTasks => currentTasks.filter(task => task.id !== taskId));
-        toast.success('Tarefa excluída com sucesso!');
-      } catch (error) {
-        toast.error('Erro ao excluir tarefa.');
-      }
-    }
+  const cancelEditing = (): void => {
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+  };
+
+  const editTask = (taskId: number): void => {
+    setTasks(tasks.map(task => task.id === taskId ? { ...task, title: editingTaskTitle } : task));
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+  };
+
+  const deleteTask = (taskId: number): void => {
+    setTasks(tasks.filter(task => task.id !== taskId));
   };
 
   return (
     <Container>
       <div className="p-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="mb-4 flex gap-2">
-          <input
-            {...register('taskTitle', { required: "Insira o nome da tarefa" })}
-            placeholder="Digite um nome para sua tarefa..."
-            className="flex-1 px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-          >
-            {editingTaskId ? "Atualizar tarefa" : "Adicionar tarefa"}
-          </button>
-        </form>
-        {errors.taskTitle && <p className="text-red-500">{errors.taskTitle.message}</p>}
-
-        <div className="space-y-2">
-          {tasks.map(task => (
-            <div key={task.id} className="flex justify-between items-center bg-gray-100 p-4 rounded shadow">
-              <div className="flex-1 min-w-0 mr-4">
-                {editingTaskId === task.id ? (
-                  <form onSubmit={handleSubmit(onEditSubmit)} className="flex gap-2 w-full">
-                    <input
-                      {...register('taskTitle', { required: "Task title is required" })}
-                      className="flex-1 px-4 py-2 border rounded"
-                    />
-                    <button type="submit" className="px-3 py-1 bg-green-500 text-white rounded shadow hover:bg-green-600">
-                      Update
-                    </button>
-                  </form>
-                ) : (
-                  <span className="font-medium break-all overflow-wrap">{task.title}</span>
-                )}
-              </div>
-              {editingTaskId !== task.id && (
-                <div className="flex gap-2">
-                  <button onClick={() => startEditing(task)} className="px-3 py-1 bg-green-500 text-white rounded shadow hover:bg-green-600">
-                    Editar
+      <h1 className="text-2xl font-bold">My To-Do List</h1>
+      <div className="mt-4">
+        <input
+          type="text"
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          placeholder="Add a new task"
+          className="border p-2 rounded mr-2"
+        />
+        <button onClick={addTask} className="bg-blue-500 text-white p-2 rounded">
+          Add Task
+        </button>
+      </div>
+      <ul className="mt-4">
+        {tasks.map(task => (
+          <li key={task.id} className="flex justify-between items-center mt-2">
+            {editingTaskId === task.id ? (
+              <input 
+                type="text" 
+                value={editingTaskTitle} 
+                onChange={(e) => setEditingTaskTitle(e.target.value)}
+                className="border p-2 rounded mr-2"
+              />
+            ) : (
+              <span>{task.title}</span>
+            )}
+            <div>
+              {editingTaskId === task.id ? (
+                <>
+                  <button onClick={() => editTask(task.id)} className="bg-green-500 text-white p-1 rounded mr-2">
+                    Save
                   </button>
-                  <button onClick={() => handleDeleteTask(task.id)} className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600">
-                    Excluir
+                  <button onClick={cancelEditing} className="bg-gray-500 text-white p-1 rounded">
+                    Cancel
                   </button>
-                </div>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => startEditing(task)} className="bg-yellow-500 text-white p-1 rounded mr-2">
+                    Edit
+                  </button>
+                  <button onClick={() => deleteTask(task.id)} className="bg-red-500 text-white p-1 rounded">
+                    Delete
+                  </button>
+                </>
               )}
             </div>
-          ))}
-        </div>
-      </div>
+          </li>
+        ))}
+      </ul>
+    </div>
     </Container>
   );
 }
+
+export default App;

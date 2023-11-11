@@ -18,7 +18,7 @@ export function Header() {
          </Link>
 
          {!loadingAuth && signed && (
-          <Link to="/">
+          <Link to="/login">
             <div className="border-2 rounded-full p-1 border-gray-900 flex justify-center">
               <FiLogIn size={24} color="#000"/>
             </div>

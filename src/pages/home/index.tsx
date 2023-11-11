@@ -37,7 +37,7 @@ export default function Home() {
         toast.success('Tarefa adicionada com sucesso!');
         reset();
       } catch (error) {
-        toast.error('Erro ao adicionar tarefa.');
+        toast.error('Erro ao adicionar a tarefa');
       }
     }
   };

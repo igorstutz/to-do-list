@@ -60,7 +60,7 @@ export function Register() {
         uid: user.user.uid
       })
 
-      toast.success("Bem vindo ao webcarros!")
+      toast.success("Bem vindo ao To Do List!")
       navigate("/", { replace: true })
 
     })

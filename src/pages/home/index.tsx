@@ -24,6 +24,8 @@ interface Task {
   title: string;
   createdAt: Date;
   completed: boolean;
+  completedAt: Date | null;
+  completedBy: string | null;
 }
 
 const App: React.FC = () => {
@@ -32,6 +34,10 @@ const App: React.FC = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Novos estados para controlar o modal
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const { user } = useContext(AuthContext);
 
@@ -48,6 +54,10 @@ const App: React.FC = () => {
           title: doc.data().title,
           createdAt: doc.data().createdAt.toDate(),
           completed: doc.data().completed || false,
+          completedAt: doc.data().completedAt
+            ? doc.data().completedAt.toDate()
+            : null,
+          completedBy: doc.data().completedBy || null,
         }));
         setTasks(tasksArray);
       });
@@ -60,9 +70,7 @@ const App: React.FC = () => {
     setErrorMessage(null);
   };
 
-  const handleEditingTaskTitleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleEditingTaskTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditingTaskTitle(e.target.value);
     setErrorMessage(null);
   };
@@ -81,7 +89,6 @@ const App: React.FC = () => {
         title: newTask,
         userId: user?.uid,
         createdAt: timestamp,
-        completed: false,
       });
       setNewTask('');
     } catch (e) {
@@ -102,17 +109,14 @@ const App: React.FC = () => {
       const taskDocRef = doc(db, 'tasks', taskId);
       await updateDoc(taskDocRef, {
         title: editingTaskTitle,
-        completed: tasks.find((task) => task.id === taskId)?.completed || false,
       });
-      setTasks(
-        tasks.map((task) =>
-          task.id === taskId ? { ...task, title: editingTaskTitle } : task
-        )
-      );
+      setTasks(tasks.map((task) =>
+        task.id === taskId ? { ...task, title: editingTaskTitle } : task
+      ));
       setEditingTaskId(null);
       setEditingTaskTitle('');
     } catch (e) {
-      console.error('Error updating document: ', e);
+      console.error('Erro ao atualizar o documento ', e);
       setErrorMessage('An error occurred while updating the task.');
     }
   };
@@ -125,7 +129,7 @@ const App: React.FC = () => {
   const cancelEditing = (): void => {
     setEditingTaskId(null);
     setEditingTaskTitle('');
-    setErrorMessage(null);
+    setErrorMessage(null); // Clear error message when canceling editing
   };
 
   const deleteTask = async (taskId: string): Promise<void> => {
@@ -133,7 +137,7 @@ const App: React.FC = () => {
       await deleteDoc(doc(db, 'tasks', taskId));
       setTasks(tasks.filter((task) => task.id !== taskId));
     } catch (e) {
-      console.error('Error deleting document: ', e);
+      console.error('Erro ao deletar o documento ', e);
       setErrorMessage('An error occurred while deleting the task.');
     }
   };
@@ -141,31 +145,83 @@ const App: React.FC = () => {
   const toggleTaskCompletion = async (taskId: string): Promise<void> => {
     try {
       const taskDocRef = doc(db, 'tasks', taskId);
-      const taskToUpdate = tasks.find((task) => task.id === taskId);
-      if (taskToUpdate) {
+      const taskIndex = tasks.findIndex((t) => t.id === taskId);
+  
+      if (taskIndex !== -1) {
+        const updatedTasks = [...tasks];
+        const completed = !updatedTasks[taskIndex].completed;
+        const completedAt = completed ? new Date() : null;
+        const completedBy = completed ? user?.displayName || null : null;
+  
         await updateDoc(taskDocRef, {
-          completed: !taskToUpdate.completed,
+          completed: completed,
+          completedAt: completedAt,
+          completedBy: completedBy,
         });
-        setTasks(
-          tasks.map((task) =>
-            task.id === taskId
-              ? { ...task, completed: !task.completed }
-              : task
-          )
-        );
+  
+        updatedTasks[taskIndex] = {
+          ...updatedTasks[taskIndex],
+          completed: completed,
+          completedAt: completedAt,
+          completedBy: completedBy,
+        };
+  
+        setTasks(updatedTasks);
       }
     } catch (e) {
-      console.error('Error updating document: ', e);
+      console.error('Erro ao atualizar o documento ', e);
       setErrorMessage('An error occurred while updating the task.');
     }
+  };
+  
+  
+
+  // Função para abrir o modal com as informações da tarefa concluída
+  const openTaskModal = (task: Task): void => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  // Função para fechar o modal
+  const closeTaskModal = (): void => {
+    setSelectedTask(null);
+    setIsModalOpen(false);
+  };
+
+  // Renderização do modal
+  const renderTaskModal = () => {
+    if (selectedTask) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-50" onClick={closeTaskModal}></div>
+          <div className="bg-white rounded-lg p-4 w-80 relative z-10">
+            <h2 className="text-lg font-semibold mb-4">Informações da Tarefa</h2>
+            <p><strong>Data e Hora da Criação:</strong> {selectedTask.createdAt.toLocaleString()}</p>
+            {selectedTask.completed ? (
+              <>
+                <p><strong>Data e Hora da Conclusão:</strong> {selectedTask.completedAt?.toLocaleString()}</p>
+                <p><strong>Usuário que Concluiu:</strong> {selectedTask.completedBy || 'N/A'}</p>
+              </>
+            ) : (
+              <p><strong>Esta tarefa ainda não foi concluída.</strong></p>
+            )}
+            <button
+              className="mt-4 bg-blue-500 text-white p-2 rounded hover:bg-blue-700"
+              onClick={closeTaskModal}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
     <Container>
       <div className="p-6 bg-white shadow-md rounded-lg mt-20">
-        <h1 className="text-2xl font-bold text-gray-700 mb-4">
-          Minha lista de tarefas
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-700 mb-4">Minha lista de tarefas</h1>
         <div className="flex flex-col sm:flex-row">
           <input
             type="text"
@@ -187,8 +243,10 @@ const App: React.FC = () => {
             <li
               key={task.id}
               className={`flex flex-col sm:flex-row bg-gray-100 p-3 rounded-lg mb-2 ${
-                task.completed ? 'bg-green-100' : ''
+                task.completed ? 'bg-green-100 cursor-pointer' : ''
               }`}
+              // Abrir o modal ao clicar na tarefa concluída
+              onClick={() => task.completed && openTaskModal(task)}
             >
               <span className={`font-bold mr-2 ${task.completed ? 'line-through text-green-500' : ''}`}>
                 {index + 1}.
@@ -205,13 +263,23 @@ const App: React.FC = () => {
                     <div className="flex space-x-2 mt-2 sm:mt-0">
                       <button
                         onClick={() => editTask(task.id)}
-                        className="bg-green-500 hover:bg-green-700 text-white p-1 rounded flex-grow sm:flex-grow-0"
+                        className={`${
+                          task.completed
+                            ? 'bg-gray-500 cursor-not-allowed'
+                            : 'bg-green-500 hover:bg-green-700'
+                        } text-white p-1 rounded flex-grow sm:flex-grow-0`}
+                        disabled={task.completed}
                       >
                         Save
                       </button>
                       <button
                         onClick={cancelEditing}
-                        className="bg-gray-500 hover:bg-gray-700 text-white p-1 rounded flex-grow sm:flex-grow-0"
+                        className={`${
+                          task.completed
+                            ? 'bg-gray-500 cursor-not-allowed'
+                            : 'bg-gray-500 hover:bg-gray-700'
+                        } text-white p-1 rounded flex-grow sm:flex-grow-0`}
+                        disabled={task.completed}
                       >
                         Cancel
                       </button>
@@ -241,23 +309,38 @@ const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => deleteTask(task.id)}
-                    className="bg-red-500 hover:bg-red-700 text-white p-1 rounded flex-grow"
+                    className={`${
+                      task.completed
+                        ? 'bg-gray-500 cursor-not-allowed'
+                        : 'bg-red-500 hover:bg-red-700'
+                    } text-white p-1 rounded flex-grow`}
+                    disabled={task.completed}
                   >
                     Excluir
                   </button>
-                  <button
-                    onClick={() => toggleTaskCompletion(task.id)}
-                    className={`bg-blue-500 hover:bg-blue-700 text-white p-1 rounded flex-grow ${
-                      task.completed ? 'bg-gray-500' : ''
-                    }`}
-                  >
-                    {task.completed ? 'Desfazer' : 'Concluir'}
-                  </button>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => toggleTaskCompletion(task.id)}
+                      className={`${
+                        task.completed
+                          ? 'bg-blue-500 hover:bg-blue-700'
+                          : 'bg-blue-500 hover:bg-blue-700'
+                      } text-white p-1 rounded flex-grow`}
+                      disabled={false}
+                    >
+                      {task.completed ? 'Desfazer' : 'Concluir'}
+                    </button>
+                  </div>
+
+
+
                 </div>
               )}
             </li>
           ))}
         </ul>
+        {/* Renderização do modal */}
+        {isModalOpen && renderTaskModal()}
       </div>
     </Container>
   );

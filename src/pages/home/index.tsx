@@ -26,6 +26,7 @@ interface Task {
   completed: boolean;
   completedAt: Date | null;
   completedBy: string | null;
+  lastEditedAt: Date | null; // Novo campo
 }
 
 const App: React.FC = () => {
@@ -58,9 +59,11 @@ const App: React.FC = () => {
             ? doc.data().completedAt.toDate()
             : null,
           completedBy: doc.data().completedBy || null,
+          lastEditedAt: null, // Adicionando a propriedade lastEditedAt
         }));
         setTasks(tasksArray);
       });
+      
       return () => unsubscribe();
     }
   }, [user?.uid]);
@@ -104,15 +107,20 @@ const App: React.FC = () => {
       setErrorMessage(result.error.errors[0].message);
       return;
     }
-
+  
     try {
       const taskDocRef = doc(db, 'tasks', taskId);
+      const timestamp = new Date();
+  
       await updateDoc(taskDocRef, {
         title: editingTaskTitle,
+        lastEditedAt: timestamp, // Atualize o campo lastEditedAt aqui
       });
+  
       setTasks(tasks.map((task) =>
-        task.id === taskId ? { ...task, title: editingTaskTitle } : task
+        task.id === taskId ? { ...task, title: editingTaskTitle, lastEditedAt: timestamp } : task
       ));
+  
       setEditingTaskId(null);
       setEditingTaskTitle('');
     } catch (e) {
@@ -120,6 +128,7 @@ const App: React.FC = () => {
       setErrorMessage('An error occurred while updating the task.');
     }
   };
+  
 
   const startEditing = (task: Task): void => {
     setEditingTaskId(task.id);
@@ -151,19 +160,17 @@ const App: React.FC = () => {
         const updatedTasks = [...tasks];
         const completed = !updatedTasks[taskIndex].completed;
         const completedAt = completed ? new Date() : null;
-        const completedBy = completed ? user?.displayName || null : null;
+        
   
         await updateDoc(taskDocRef, {
           completed: completed,
           completedAt: completedAt,
-          completedBy: completedBy,
         });
   
         updatedTasks[taskIndex] = {
           ...updatedTasks[taskIndex],
           completed: completed,
           completedAt: completedAt,
-          completedBy: completedBy,
         };
   
         setTasks(updatedTasks);
@@ -200,7 +207,8 @@ const App: React.FC = () => {
             {selectedTask.completed ? (
               <>
                 <p><strong>Data e Hora da Conclusão:</strong> {selectedTask.completedAt?.toLocaleString()}</p>
-                <p><strong>Usuário que Concluiu:</strong> {selectedTask.completedBy || 'N/A'}</p>
+                <p><strong>Data e Hora da Última Edição:</strong> {selectedTask.lastEditedAt ? selectedTask.lastEditedAt.toLocaleString() : 'N/A'}</p>
+
               </>
             ) : (
               <p><strong>Esta tarefa ainda não foi concluída.</strong></p>

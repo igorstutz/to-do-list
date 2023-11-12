@@ -16,7 +16,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import { Container } from '../../components/container';
 
 const taskSchema = z.object({
-  title: z.string().nonempty('Task name cannot be empty.'),
+  title: z.string().nonempty('Digite um nome para sua tarefa.'),
 });
 
 interface Task {
@@ -26,7 +26,7 @@ interface Task {
   completed: boolean;
   completedAt: Date | null;
   completedBy: string | null;
-  lastEditedAt: Date | null; // Novo campo
+  lastEditedAt: Date | null; 
 }
 
 const App: React.FC = () => {
@@ -95,8 +95,8 @@ const App: React.FC = () => {
       });
       setNewTask('');
     } catch (e) {
-      console.error('Error adding document: ', e);
-      setErrorMessage('An error occurred while adding the task.');
+      console.error('Erro ao adicionar o documento: ', e);
+      setErrorMessage('Um erro ocorrou enquanto tentava adicionar a tarefa.');
     }
   };
 
@@ -114,7 +114,7 @@ const App: React.FC = () => {
   
       await updateDoc(taskDocRef, {
         title: editingTaskTitle,
-        lastEditedAt: timestamp, // Atualize o campo lastEditedAt aqui
+        lastEditedAt: timestamp
       });
   
       setTasks(tasks.map((task) =>
@@ -125,7 +125,7 @@ const App: React.FC = () => {
       setEditingTaskTitle('');
     } catch (e) {
       console.error('Erro ao atualizar o documento ', e);
-      setErrorMessage('An error occurred while updating the task.');
+      setErrorMessage('Um erro ocorrou enquanto tentava atualizar a tarefa.');
     }
   };
   
@@ -138,7 +138,7 @@ const App: React.FC = () => {
   const cancelEditing = (): void => {
     setEditingTaskId(null);
     setEditingTaskTitle('');
-    setErrorMessage(null); // Clear error message when canceling editing
+    setErrorMessage(null); 
   };
 
   const deleteTask = async (taskId: string): Promise<void> => {
@@ -147,7 +147,7 @@ const App: React.FC = () => {
       setTasks(tasks.filter((task) => task.id !== taskId));
     } catch (e) {
       console.error('Erro ao deletar o documento ', e);
-      setErrorMessage('An error occurred while deleting the task.');
+      setErrorMessage('Um erro ocorrou enquanto tentava deletar a tarefa.');
     }
   };
 
@@ -177,7 +177,7 @@ const App: React.FC = () => {
       }
     } catch (e) {
       console.error('Erro ao atualizar o documento ', e);
-      setErrorMessage('An error occurred while updating the task.');
+      setErrorMessage('Um erro ocorrou enquanto tentava atualizar a tarefa.');
     }
   };
   
@@ -207,7 +207,7 @@ const App: React.FC = () => {
             {selectedTask.completed ? (
               <>
                 <p><strong>Data e Hora da Conclusão:</strong> {selectedTask.completedAt?.toLocaleString()}</p>
-                <p><strong>Data e Hora da Última Edição:</strong> {selectedTask.lastEditedAt ? selectedTask.lastEditedAt.toLocaleString() : 'N/A'}</p>
+                <p><strong>Data e Hora da Última Edição:</strong> {selectedTask.lastEditedAt ? selectedTask.lastEditedAt.toLocaleString() : 'Nenhuma edição foi identificada'}</p>
 
               </>
             ) : (
@@ -278,7 +278,7 @@ const App: React.FC = () => {
                         } text-white p-1 rounded flex-grow sm:flex-grow-0`}
                         disabled={task.completed}
                       >
-                        Save
+                        Salvar
                       </button>
                       <button
                         onClick={cancelEditing}
@@ -289,7 +289,7 @@ const App: React.FC = () => {
                         } text-white p-1 rounded flex-grow sm:flex-grow-0`}
                         disabled={task.completed}
                       >
-                        Cancel
+                        Cancelar
                       </button>
                     </div>
                   </div>

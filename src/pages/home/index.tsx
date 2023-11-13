@@ -35,7 +35,7 @@ const App: React.FC = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [filter, setFilter] = useState("todos");
+  const [filter, setFilter] = useState("todas");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -180,31 +180,47 @@ const App: React.FC = () => {
     }
   };
 
+  const handleButtonClick = (
+    e: React.MouseEvent<HTMLButtonElement>, 
+    task: Task, 
+    action: string
+  ) => {
+    e.stopPropagation();
+    if (action === 'edit') {
+      startEditing(task);
+    } else if (action === 'delete') {
+      setTaskToDelete(task);
+      setIsDeleteModalOpen(true);
+    } else if (action === 'toggleCompletion') {
+      toggleTaskCompletion(task.id);
+    }
+  };  
+
   const FilterButtons = () => (
-    <div className="flex justify-center gap-2 mb-4">
+    <div className="flex justify-center gap-2 mt-4">
       <button 
-        onClick={() => setFilter("todos")}
+        onClick={() => setFilter("todas")}
         className={`px-4 py-2 text-sm font-medium rounded-md ${
-          filter === "todos" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+          filter === "todas" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
         }`}
       >
-        Todos
+        Todas
       </button>
       <button 
-        onClick={() => setFilter("concluídos")}
+        onClick={() => setFilter("concluídas")}
         className={`px-4 py-2 text-sm font-medium rounded-md ${
-          filter === "concluídos" ? "bg-green-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+          filter === "concluídas" ? "bg-green-500 text-white" : "bg-gray-200 hover:bg-gray-300"
         }`}
       >
-        Concluídos
+        Concluídas
       </button>
       <button 
-        onClick={() => setFilter("abertos")}
+        onClick={() => setFilter("abertas")}
         className={`px-4 py-2 text-sm font-medium rounded-md ${
-          filter === "abertos" ? "bg-yellow-500 hover:bg-yellow-700' text-white" : "bg-gray-200 hover:bg-gray-300"
+          filter === "abertas" ? "bg-yellow-500 hover:bg-yellow-700' text-white" : "bg-gray-200 hover:bg-gray-300"
         }`}
       >
-        Abertos
+        Abertas
       </button>
     </div>
   );
@@ -280,10 +296,7 @@ const App: React.FC = () => {
   return (
     <Container>
       <div className="p-6 bg-white shadow-md rounded-lg mt-20">
-        <h1 className="text-2xl font-bold text-gray-700 mb-4">Minha lista de tarefas</h1>
-        
-        <FilterButtons />
-
+        <h1 className="text-2xl font-bold text-gray-700 mb-4">Lista de tarefas</h1>
         <div className="flex flex-col sm:flex-row">
           <input
             type="text"
@@ -300,77 +313,56 @@ const App: React.FC = () => {
           </button>
         </div>
 
+        <FilterButtons />
+
         {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
 
         <ul className="mt-4">
           {tasks.filter((task) => {
-              if (filter === "todos") return true;
-              if (filter === "concluídos") return task.completed;
-              if (filter === "abertos") return !task.completed;
-              return true;
-            }).map((task, index) => (
-              <li key={task.id} className={`flex flex-col sm:flex-row bg-gray-100 p-3 rounded-lg mb-2 ${task.completed ? 'bg-green-100 cursor-pointer' : ''}`} onClick={() => task.completed && openTaskModal(task)}>
-                <span className={`font-bold mr-2 ${task.completed ? 'line-through text-green-500' : ''}`}>{index + 1}.</span>
-                <div className="flex-1 min-w-0 w-full">
-                  {editingTaskId === task.id ? (
-                    <div className="flex flex-col sm:flex-row w-full">
-                      <input
-                        type="text"
-                        value={editingTaskTitle}
-                        onChange={handleEditingTaskTitleChange}
-                        className="border p-2 rounded mb-2 sm:mb-0 w-full sm:mr-2"
-                      />
-                      <div className="flex space-x-2 mt-2 sm:mt-0">
-                        <button
-                          onClick={() => editTask(task.id)}
-                          className="bg-green-500 hover:bg-green-700 text-white p-1 rounded flex-grow sm:flex-grow-0"
-                        >
-                          Salvar
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          className="bg-gray-500 hover:bg-gray-700 text-white p-1 rounded flex-grow sm:flex-grow-0"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
+            if (filter === "todas") return true;
+            if (filter === "concluídas") return task.completed;
+            if (filter === "abertas") return !task.completed;
+            return true;
+          }).map((task, index) => (
+            <li key={task.id} className={`flex flex-col sm:flex-row bg-gray-100 p-3 rounded-lg mb-2 ${task.completed ? 'bg-green-100 cursor-pointer' : ''}`} onClick={() => task.completed && openTaskModal(task)}>
+              <span className={`font-bold mr-2 ${task.completed ? 'line-through text-green-500' : ''}`}>{index + 1}.</span>
+              <div className="flex-1 min-w-0 w-full">
+                {editingTaskId === task.id ? (
+                  <div className="flex flex-col sm:flex-row w-full">
+                    <input type="text" value={editingTaskTitle} onChange={handleEditingTaskTitleChange} className="border p-2 rounded mb-2 sm:mb-0 w-full sm:mr-2" />
+                    <div className="flex space-x-2 mt-2 sm:mt-0">
+                      <button onClick={() => editTask(task.id)} className="bg-green-500 hover:bg-green-700 text-white p-1 rounded flex-grow sm:flex-grow-0">Salvar</button>
+                      <button onClick={cancelEditing} className="bg-gray-500 hover:bg-gray-700 text-white p-1 rounded flex-grow sm:flex-grow-0">Cancelar</button>
                     </div>
-                  ) : (
-                    <span className="text-gray-700 break-all overflow-wrap break-word">
-                      {task.title}
-                    </span>
-                  )}
-                  {errorMessage && editingTaskId === task.id && (
-                    <p className="text-red-500 mt-2">{errorMessage}</p>
-                  )}
-                </div>
-                {editingTaskId !== task.id && (
-                  <div className="flex space-x-2 mt-2 sm:mt-0">
-                    <button
-                      onClick={() => startEditing(task)}
-                      className="bg-yellow-500 hover:bg-yellow-700 text-white p-1 rounded flex-grow"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setTaskToDelete(task);
-                        setIsDeleteModalOpen(true);
-                      }}
-                      className="bg-red-500 hover:bg-red-700 text-white p-1 rounded flex-grow"
-                    >
-                      Excluir
-                    </button>
-                    <button
-                      onClick={() => toggleTaskCompletion(task.id)}
-                      className="bg-blue-500 hover:bg-blue-700 text-white p-1 rounded flex-grow"
-                    >
-                      {task.completed ? 'Desfazer' : 'Concluir'}
-                    </button>
                   </div>
+                ) : (
+                  <span className="text-gray-700 break-all overflow-wrap break-word">{task.title}</span>
                 )}
-              </li>
-            ))}
+              </div>
+              {editingTaskId !== task.id && (
+                <div className="flex space-x-2 mt-2 sm:mt-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!task.completed) {
+                        startEditing(task);
+                      }
+                    }}
+                    className={`${
+                      task.completed
+                        ? 'bg-gray-400 text-gray-800 cursor-not-allowed'
+                        : 'bg-yellow-500 hover:bg-yellow-700 text-white'
+                    } p-1 rounded flex-grow`}
+                    disabled={task.completed}
+                  >
+                    Editar
+                  </button>
+                  <button onClick={(e) => handleButtonClick(e, task, 'delete')} className="bg-red-500 hover:bg-red-700 text-white p-1 rounded flex-grow">Excluir</button>
+                  <button onClick={(e) => handleButtonClick(e, task, 'toggleCompletion')} className="bg-blue-500 hover:bg-blue-700 text-white p-1 rounded flex-grow">{task.completed ? 'Desfazer' : 'Concluir'}</button>
+                </div>
+              )}
+            </li>
+          ))}
         </ul>
         {isModalOpen && renderTaskModal()}
       </div>

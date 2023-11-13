@@ -1,5 +1,5 @@
 import { useEffect, useContext } from 'react'
-import logoImg from '../../assets/logo.svg'
+import logoImg from '../../assets/logo.png'
 import { Link, useNavigate } from 'react-router-dom'
 import { Container } from '../../components/container'
 
